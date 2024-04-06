@@ -27,11 +27,17 @@ def on_press(key):
             main_function()
 
         elif key == keyboard.Key.shift_r: #debug print mouse
-            click_all_corners()
+            #click_all_corners()
+            box_nr = coords_to_box_number(pyautogui.position()[0], pyautogui.position()[1])
+            print("Box number: ", box_nr)
+            print("Box color: ", get_color_of_box(box_nr[0], box_nr[1]))
             #pos = pyautogui.position()
             #print("Mouse position: ", {pos})
             #print("Box tuple: ", get_box_tuple(pos[0], pos[1]))
             #click_box_tuple(29,15)
+        
+        elif key == keyboard.Key.delete: #debug for me to update screen after i press with my own mouse
+            update_screen()
     
     except Exception as e:
         print(e)
@@ -61,6 +67,7 @@ def main_function():
 
     #Init logic
     init_logic(field_width, field_height, rows, cols, top_left)
+    update_screen()
 
     #pos = list(pyautogui.position())
     #pos[0] -= (game_board_region[0] + minefield_region[0])
