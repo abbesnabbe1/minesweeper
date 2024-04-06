@@ -12,10 +12,10 @@ test_image = "img/fake_screen.png"
 template = cv2.imread(test_template)
 image = cv2.imread(test_image)
 
-rows, cols = 30, 16
+cols, rows = 30, 16
 
-field_width = 600  #Width of the minefield
-field_height = 400 #Height of the minefield
+field_width = 0  #Width of the minefield
+field_height = 0 #Height of the minefield
 
 def on_press(key):
     try:
@@ -27,9 +27,11 @@ def on_press(key):
             main_function()
 
         elif key == keyboard.Key.shift_r: #debug print mouse
-            pos = pyautogui.position()
-            print("Mouse position: ", {pos})
-            print("Box tuple: ", get_box_tuple(pos[0], pos[1]))
+            click_all_corners()
+            #pos = pyautogui.position()
+            #print("Mouse position: ", {pos})
+            #print("Box tuple: ", get_box_tuple(pos[0], pos[1]))
+            #click_box_tuple(29,15)
     
     except Exception as e:
         print(e)
@@ -39,26 +41,33 @@ def on_press(key):
 #   MAIN CODE HERE:
 #
 def main_function():
+    #Get (x, y), width height for the game board
     game_board_region = find_game_board_coords() # (x, y, w, h)
     screenshot = pyautogui.screenshot(region=game_board_region)
     
-    #Convert image to cv2 BGR to then find the minefield region
-    image = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+    #Get (x, y), width height for the minefield (clickable boxes!)
+    image = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR) #Convert image to cv2 BGR to then find the minefield region
     minefield_region = find_biggest_contour(image, [123,123,123])
 
+    #Coords for the top left of minefield!
     top_left = game_board_region[0] + minefield_region[0], game_board_region[1] + minefield_region[1]
+    
+    #Coords for the bottom right of minefield!
     #game_board_region= (x, y, w, h), minefield_region = (x, y, w, h)
     bottom_right = game_board_region[0] + minefield_region[0] + minefield_region[2], game_board_region[1] + minefield_region[1] + minefield_region[3]
     global field_width, field_height
     field_width = minefield_region[2]
     field_height = minefield_region[3]
 
-    pos = list(pyautogui.position())
-    pos[0] -= (game_board_region[0] + minefield_region[0])
-    pos[1] -= (game_board_region[1] + minefield_region[1])
-    print(pos[0], pos[1])
-    print((field_width/cols), (field_height/rows))
-    print(pos[0]//(field_width/rows), pos[1]//(field_height/cols))
+    #Init logic
+    init_logic(field_width, field_height, rows, cols, top_left)
+
+    #pos = list(pyautogui.position())
+    #pos[0] -= (game_board_region[0] + minefield_region[0])
+    #pos[1] -= (game_board_region[1] + minefield_region[1])
+    #print(pos[0], pos[1])
+    #print((field_width/rows), (field_height/cols))
+    #print(pos[0]//(field_width/rows), pos[1]//(field_height/cols))
 
 #
 if __name__ == '__main__':
