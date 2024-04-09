@@ -4,6 +4,8 @@ import pyautogui
 from PIL import Image
 import numpy as np
 from PIL import ImageDraw
+import cv2
+from image_location import *
 
 field_width = 0
 field_height = 0
@@ -14,6 +16,11 @@ top_left = (0, 0)
 box_width = 0
 box_height = 0
 
+finished_list = []
+active_list = []
+
+
+prev_screenshot = None
 cur_screenshot = None
 
 def init_logic(field_width_in, field_height_in, rows_in, cols_in, top_left_in):
@@ -28,22 +35,23 @@ def init_logic(field_width_in, field_height_in, rows_in, cols_in, top_left_in):
     box_width = (field_width)/cols
     box_height = (field_height)/rows
 
-def update_screen():
-    global cur_screenshot
-    cur_screenshot = pyautogui.screenshot(region=(top_left[0], top_left[1], field_width, field_height))
+    global finished_list
+    finished_list = [[1 for i in range(cols)] for j in range(rows)]
 
-def click_all_corners():
-    click_box_number(0, 0)
-    click_box_number(cols-1, 0)
-    click_box_number(0, rows-1)
-    click_box_number(cols-1, rows-1)
+def run_logic():
+    
+
+def update_screen():
+    global cur_screenshot, prev_screenshot
+    prev_screenshot = cur_screenshot
+    cur_screenshot = pyautogui.screenshot(region=(top_left[0], top_left[1], field_width, field_height))
 
 def coords_to_box_number(x, y):
     global field_width, field_height, top_left
     x -= top_left[0]
     y -= top_left[1]
     return x//(box_width), y//(box_height)
-
+update_screen
 def box_number_to_coords(x, y):
     global field_width, field_height, top_left
     x = (top_left[0] + x*box_width + box_width/2) -1 #Small adjustment to fix centering
@@ -54,26 +62,26 @@ def click_box_number(x,y):
     x,y = box_number_to_coords(x,y)
     pyautogui.click(x, y)
 
-def get_nearby_boxes(x,y):
-    x,y = box_number_to_coords(x,y)
-    x -= top_left[0]
-    y -= top_left[1]
-    test = cur_screenshot.crop((x-(box_width*1.5), y-(box_height*1.5), x+(1.5*box_width), y+(1.5*box_height)))
-    print(np.array(test))
-    test.save("test.png")
+
 
 #Empty = (189x3), Flag = (0x3), 1 = (0,0,255), 2 = (0,123,0), 3 = (255,0,0), 
 #4 = (0,0,123) 5 = (123,0,0), 6 = (0,123,123), 7 = ?sus lets just hope it wont appear, 8 = (123,123,123)
 def get_box_item(x,y):
+    x_nr, y_nr = x, y
     x,y = box_number_to_coords(x,y)
     x -= top_left[0]
     y -= top_left[1]
-    #print(np.array(test))
     color = (cur_screenshot.getpixel((x+4,y+5)))
     if color == (189,189,189):
-        return -1
+        box = get_box_image(x_nr, y_nr)
+        box_converted = cv2.cvtColor(np.array(box), cv2.COLOR_RGB2BGR)
+        _, _, _, _, size = find_biggest_contour(box_converted, [189,189,189])
+        if size > 200:
+            return "empty"
+        else:
+            return "?"
     elif color == (0,0,0):
-        return 0
+        return "flag"
     elif color == (0,0,255):
         return 1
     elif color == (0,123,0):
@@ -88,6 +96,12 @@ def get_box_item(x,y):
         return 6
     elif color == (123,123,123):
         return 8
+
+def get_box_image(x,y):
+    x,y = box_number_to_coords(x,y)
+    x -= top_left[0]
+    y -= top_left[1]
+    return cur_screenshot.crop((x-(box_width/2), y-(box_height/2), x+(box_width/2), y+(box_height/2)))
 
 #
 #  DEBUG FUNCTIONS
@@ -109,10 +123,39 @@ def size_test():
 
     copy.save("screenshot_with_squares.png")
 
-def sweep_box(x,y):
-    #need to handle edge cases when we are at the edge of the board
-    for i in range(-1,2):
-        for j in range(-1,2):
-            if i == 0 and j == 0:
-                continue
-            if j #CONTINUE HERE!
+def get_nearby_boxes(x,y):
+    x,y = box_number_to_coords(x,y)
+    x -= top_left[0]
+    y -= top_left[1]
+    test = cur_screenshot.crop((x-(box_width*1.5), y-(box_height*1.5), x+(1.5*box_width), y+(1.5*box_height)))
+    test.save("test.png")
+    cv2.imshow("test", np.array(test))
+    cv2.waitKey(0)
+
+def get_finished_list():
+    return finished_list
+
+def get_changed_boxes():
+    # Convert the images to numpy arrays
+    np_image1 = np.array(prev_screenshot)
+    np_image2 = np.array(cur_screenshot)
+
+    # Calculate the absolute difference between the two images
+    diff = np.abs(np_image1 - np_image2)
+
+    # Convert the difference image to grayscale
+    diff_gray = cv2.cvtColor(diff, cv2.COLOR_RGB2GRAY)
+
+    # Threshold the difference image to create a binary mask
+    _, mask = cv2.threshold(diff_gray, 0, 255, cv2.THRESH_BINARY)
+
+    # Find the coordinates of the changed pixels
+    changed_pixels = np.where(mask != 0)
+
+    # Calculate the box numbers of the changed pixels
+    changed_boxes = set()
+    for x, y in zip(changed_pixels[1], changed_pixels[0]):
+        box_number = coords_to_box_number(x+top_left[0], y+top_left[1])
+        changed_boxes.add(box_number)
+
+    return changed_boxes

@@ -7,7 +7,7 @@ board_color = [189, 189, 189]
 def find_game_board_coords():
     screenshot = pyautogui.screenshot()
     screenshot = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR) #cv2 uses BGR instead of RGB which we screenshot in
-    x, y, w, h = find_biggest_contour(screenshot, board_color)
+    x, y, w, h, size = find_biggest_contour(screenshot, board_color)
     return x, y, w, h
 
 #Takes in color and an image. Returns ALL countours
@@ -34,5 +34,4 @@ def find_biggest_contour(image, color):
             biggest_area = area
             biggest_contour = contour
     x, y, w, h = cv2.boundingRect(biggest_contour)
-    return x, y, w, h
-
+    return x, y, w, h, biggest_area
