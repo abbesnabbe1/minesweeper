@@ -3,6 +3,7 @@ from logic import *
 import time
 from pynput import keyboard
 import pyautogui
+import traceback
 
 #Image template
 test_template = "img/board100.png"
@@ -29,14 +30,14 @@ def on_press(key):
         elif key == keyboard.Key.shift_r: #debug print mouse
             box_nr = coords_to_box_number(pyautogui.position()[0], pyautogui.position()[1])
             print("Box number: ", box_nr)
-            #sweep_box(box_nr[0], box_nr[1])
-            print(compare_images())
+            pressed_bomb(box_nr[0], box_nr[1])
         
         elif key == keyboard.Key.delete: #debug for me to update screen after i press with my own mouse
             update_screen()
     
     except Exception as e:
         print(e)
+        traceback.print_exc()
 
 #
 #   MAIN CODE HERE:
