@@ -25,8 +25,11 @@ item_map = []
 prev_screenshot = None
 cur_screenshot = None
 
+bombs_left = 99
+
 def init_logic(field_width_in, field_height_in, rows_in, cols_in, top_left_in):
     global field_width, field_height, rows, cols, top_left
+    global bombs_left
     field_width = field_width_in-2
     field_height = field_height_in-2
     rows = rows_in
@@ -38,14 +41,30 @@ def init_logic(field_width_in, field_height_in, rows_in, cols_in, top_left_in):
     box_height = (field_height)/rows
 
     global item_map #Init item map to ?
-    item_map = [x[:] for x in [["?"] * cols] * rows]
+    item_map = [x[:] for x in [["?"] * rows] * cols]
+
+    bombs_left = 99
 
 def run_logic():
     click_box_number(0,0)
     update_screen()
-    for i in range(50):
-        print("loop")
+
+    for i in range(5): #Click 5 times to get the game going
+        rand_x = random.randint(0, cols-1)
+        rand_y = random.randint(0, rows-1)
+        click_box_number(rand_x, rand_y)
+        update_screen()
+        if (pressed_bomb(rand_x, rand_y)):
+            print("Game over!")
+            return False
+
+    for i in range(5):
+        #print(bombs_left)
+        if (bombs_left == 0):
+            print("You won!")
+            return True
         if (update_active() == False): #Nothing changed, we need to risk a random click!
+            print("Random click! pray 4 forsen") #This isnt great either, as the available boxes get fewer and fewer the chance of finding an empty box gets worse
             rand_x = random.randint(0, cols-1)
             rand_y = random.randint(0, rows-1)
             click_box_number(rand_x, rand_y)
@@ -53,21 +72,22 @@ def run_logic():
 
             if (pressed_bomb(rand_x, rand_y)):
                 print("Game over!")
-                break
+                return False
         else:
-            print("Active list: ", active_list)
+            #print("Active list: ", active_list)
             for box in active_list:
-                print("looking at: ", box)
+                #print("looking at: ", box)
                 
                 #Skip flags and empty boxes
                 if(item_map[int(box[0])][int(box[1])] == "flag" or item_map[int(box[0])][int(box[1])] == "empty"):
-                    print("Skip")
+                    #print("Skip")
                     continue
                 
                 neighbors = get_neighbors(box[0], box[1])
                 neighbors_item = [x[0] for x in neighbors]
+                #print(neighbors_item)
 
-                print(neighbors_item.count("flag") + neighbors_item.count("?"))
+                #print(neighbors_item.count("flag") + neighbors_item.count("?"))
                 #Mine found!
                 if(item_map[int(box[0])][int(box[1])] == (neighbors_item.count("flag") + neighbors_item.count("?"))):
                     print("Mine found!")
@@ -89,10 +109,13 @@ def run_logic():
 def update_active():
     global active_list, finished_list, old_active_list, item_map
     changed_boxes = get_changed_boxes()
-    print("Changed boxes: ", changed_boxes)
+    #print("Changed boxes: ", changed_boxes)
     for box in changed_boxes:
         active_list.append(box)
     for box in active_list:
+        #print(box)
+        #print(int(box[0]))
+        #print("Size of item_map: ", len(item_map), "x", len(item_map[0]))
         item_map[int(box[0])][int(box[1])] = get_box_item(box[0], box[1])
     new_active_list = []
     for box in active_list:
@@ -142,8 +165,10 @@ def click_box_number(x,y):
     pyautogui.click(x, y)
 
 def flag_box_number(x,y):
+    global bombs_left
     x,y = box_number_to_coords(x,y)
     pyautogui.rightClick(x, y)
+    bombs_left -= 1
 
 #Empty = (189x3), Flag = (0x3), 1 = (0,0,255), 2 = (0,123,0), 3 = (255,0,0), 
 #4 = (0,0,123) 5 = (123,0,0), 6 = (0,123,123), 7 = ?sus lets just hope it wont appear, 8 = (123,123,123)
@@ -210,8 +235,8 @@ def get_changed_boxes():
 
 def get_neighbors(x, y):
     neighbors = []
-    for i in range(max(-1, -int(x)), min(2, cols - int(x))):
-        for j in range(max(-1, -int(y)), min(2, rows - int(y))):
+    for i in range(max(-1, -int(x)), min(cols - int(x), 2)):
+        for j in range(max(-1, -int(y)), min(rows - int(y), 2)):
             if i == 0 and j == 0:
                 continue
             neighbors.append(((item_map[int(x+i)][int(y+j)]), (x+i, y+j)))

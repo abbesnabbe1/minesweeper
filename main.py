@@ -64,7 +64,20 @@ def main_function():
     #Init logic
     init_logic(field_width, field_height, rows, cols, top_left)
     update_screen()
-    run_logic()
+    
+    #Game loop here:
+    for i in range(5):
+        if run_logic() == True: #When all bombs are used we return True and end the loop! Else return false and continue
+            break
+        #Else we need to reset the game board
+        x = top_left[0] + field_width/2
+        y = top_left[1] + 0.07*field_height
+        print("RESEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+        pyautogui.click(x, y)
+        init_logic(field_width, field_height, rows, cols, top_left)
+        update_screen()
+    print("YOU JUST WON THE GAME!")
+
 
 #
 if __name__ == '__main__':
